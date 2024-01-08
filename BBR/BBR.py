@@ -2,26 +2,22 @@ import cv2
 import numpy as np
 
 # Funkcja do wykrywania piłki
-def detect_ball(frame):
-    # Konwersja obrazu do skali szarości
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+def detect_ball(frame, backSub):
+    # Użycie substraktora tła do wygenerowania maski pierwszoplanowej
+    fgMask = backSub.apply(frame)
 
-    # Binaryzacja adaptacyjna
-    # binary_adaptive = cv2.adaptiveThreshold(
-    #     gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-    # )
-    # Opcjonalnie: zastosowanie rozmycia Gaussa do redukcji szumów
-    # blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    # Opcjonalnie: zastosowanie rozmycia Gaussa do redukcji szumów na masce
+    # fgMask = cv2.GaussianBlur(fgMask, (9, 9), 2)
 
-    # Wykrywanie okręgów za pomocą transformacji Hougha
+    # Wykrywanie okręgów za pomocą transformacji Hougha na masce
     circles = cv2.HoughCircles(
-        gray,
+        fgMask,
         cv2.HOUGH_GRADIENT,
         dp=1.2,
         minDist=10,
-        param1=200,
-        param2=10,
-        minRadius=10,
+        param1=100,
+        param2=50,
+        minRadius=20,
         maxRadius=200,
     )
 
@@ -46,7 +42,7 @@ def track_ball(ball_position, last_position):
 
     # Ustalenie progu, aby określić, czy nastąpiła znacząca zmiana kierunku
     # Prog ten można dostosować w zależności od wymagań
-    threshold = 100
+    threshold = 15
 
     # Wykrywanie odbicia
     # Odbicie może być wykryte na podstawie znacznej zmiany w pionowym kierunku (delta_y)
@@ -57,9 +53,11 @@ def track_ball(ball_position, last_position):
 
 
 # Inicjalizacja kamery
-cap = cv2.VideoCapture(3)
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+# Ustawienie ekspozycji
+cap.set(cv2.CAP_PROP_EXPOSURE, -6)
 
 
 exposure = cap.get(cv2.CAP_PROP_EXPOSURE)
@@ -67,18 +65,25 @@ print("Aktualna wartość ekspozycji:", exposure)
 # Ustawienie liczby klatek na sekundę
 cap.set(cv2.CAP_PROP_FPS, 30)
 
+# Inicjalizacja zmiennej do mierzenia czasu
+timer_start = cv2.getTickCount()
+frame_count = 0
+
+
 
 last_position = None
 bounce_count = 0
-
+backSub = cv2.createBackgroundSubtractorMOG2()
 
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
+    
+   # Przykład wywołania w pętli
+    ball_position = detect_ball(frame, backSub)
 
-    ball_position = detect_ball(frame)
 
     if ball_position is not None:
         # Rysowanie krzyżyka na piłce
@@ -108,6 +113,20 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
+        ret, frame = cap.read()
+    if not ret:
+        break
+
+    frame_count += 1
+
+    # Obliczanie FPS
+    if frame_count >= 10:  # Obliczanie FPS co 10 klatek dla większej dokładności
+        timer_end = cv2.getTickCount()
+        time = (timer_end - timer_start) / cv2.getTickFrequency()
+        fps = frame_count / time
+        print(f"Aktualne FPS: {fps:.2f}")  # Wyświetlanie FPS
+        frame_count = 0
+        timer_start = cv2.getTickCount()
 
 cap.release()
 cv2.destroyAllWindows()
