@@ -3,15 +3,15 @@ import numpy as np
 
 # Funkcja do wykrywania piłki
 def detect_ball(frame, backSub):
-    # Użycie substraktora tła do wygenerowania maski pierwszoplanowej
-    fgMask = backSub.apply(frame)
-
-    # Opcjonalnie: zastosowanie rozmycia Gaussa do redukcji szumów na masce
+    # Użycie substraktora tła do wygenerowania maski pierwszoplanowe
+    # fgMask = backSub.apply(frame)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # # Opcjonalnie: zastosowanie rozmycia Gaussa do redukcji szumów na masce
     # fgMask = cv2.GaussianBlur(fgMask, (9, 9), 2)
 
     # Wykrywanie okręgów za pomocą transformacji Hougha na masce
     circles = cv2.HoughCircles(
-        fgMask,
+        gray,
         cv2.HOUGH_GRADIENT,
         dp=1.2,
         minDist=10,
@@ -42,7 +42,8 @@ def track_ball(ball_position, last_position):
 
     # Ustalenie progu, aby określić, czy nastąpiła znacząca zmiana kierunku
     # Prog ten można dostosować w zależności od wymagań
-    threshold = 15
+    threshold = 
+
 
     # Wykrywanie odbicia
     # Odbicie może być wykryte na podstawie znacznej zmiany w pionowym kierunku (delta_y)
@@ -53,7 +54,7 @@ def track_ball(ball_position, last_position):
 
 
 # Inicjalizacja kamery
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 # Ustawienie ekspozycji
